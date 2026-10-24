@@ -49,4 +49,9 @@ and trial a pre-send evidence checker.”
 
 34 local automated checks passed, including an actual SDK request round trip through a
 mock HTTP transport and Streamlit widget tests. The initial UI was inspected in the
-browser. No live OpenAI call was made because an OpenAI API key was not configured.
+browser. No live OpenAI call was made at initial handoff because an OpenAI API key was not configured.
+
+After a key was added, the live request reached OpenAI but returned HTTP 429 with
+`credit_balance_exhausted` / `insufficient_quota`. Live conversation acceptance remains
+pending API credits. The app now distinguishes exhausted credits from temporary rate
+limiting, with three added regression cases (37 automated checks total).

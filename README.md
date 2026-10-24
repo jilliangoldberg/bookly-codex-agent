@@ -35,6 +35,10 @@ Direct dependencies are pinned to the tested versions. Tests do not require an A
 python -m pytest -q
 ```
 
+If OpenAI reports `credit_balance_exhausted` or `insufficient_quota`, check API billing
+for the account or project behind your key. Dewey displays this separately from temporary
+rate limiting. A key being present does not establish available API credits.
+
 ## Read the code in this order
 
 1. **`tools.py`**: three fixture orders, return eligibility, proposal preparation, submission.

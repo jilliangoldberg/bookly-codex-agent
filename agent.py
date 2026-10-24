@@ -3,7 +3,7 @@
 import json
 import logging
 
-from openai import OpenAIError
+from openai import OpenAIError, RateLimitError
 
 from tools import DEMO_DATE, check_return_eligibility, failure, get_order, prepare_return
 
@@ -136,6 +136,10 @@ def run_turn(user_message: str, state: dict, client, model: str = MODEL) -> str:
                 max_output_tokens=2000,
                 store=False,
             )
+        except RateLimitError as error:
+            if error.code in {"credit_balance_exhausted", "insufficient_quota"} or error.type == "insufficient_quota":
+                return add_recovery(state, "My OpenAI API account has no credits available. Please check API billing for the account or project behind OPENAI_API_KEY, then try again. No return request was created.")
+            return add_recovery(state, "My AI service is receiving too many requests. Please wait a moment and try again. No return request was created.")
         except OpenAIError:
             LOGGER.warning("OpenAI request failed; credentials and response bodies omitted.")
             return add_recovery(state, "I couldn’t reach my AI service. Please try again. No return request was created.")

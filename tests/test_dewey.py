@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 import httpx
-from openai import APIConnectionError, OpenAI
+from openai import APIConnectionError, OpenAI, RateLimitError
 from streamlit.testing.v1 import AppTest
 
 import agent
@@ -184,6 +184,22 @@ def test_api_failure_clears_proposal_and_records_fallback(state):
     assert "couldn’t reach" in reply
     assert state["pending_return"] is None
     assert state["messages"][-1]["content"] == reply
+
+
+@pytest.mark.parametrize("code,expected", [
+    ("credit_balance_exhausted", "no credits available"),
+    ("insufficient_quota", "no credits available"),
+    ("rate_limit_exceeded", "too many requests"),
+])
+def test_quota_and_temporary_rate_limits_have_distinct_recovery(state, code, expected):
+    error = RateLimitError(
+        "Test API limit", response=httpx.Response(429, request=httpx.Request("POST", "https://api.openai.com/v1/responses")),
+        body={"code": code},
+    )
+    reply = agent.run_turn("Where is my order?", state, fake_client(error))
+    assert expected in reply
+    assert state["pending_return"] is None
+    assert state["created_returns"] == []
 
 
 def test_six_call_bound_keeps_tool_results_paired(state):
