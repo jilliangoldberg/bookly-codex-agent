@@ -136,10 +136,22 @@ def main() -> None:
     load_dotenv()
     st.set_page_config(page_title="Dewey · Bookly Support", page_icon="🐛", layout="centered")
     st.markdown("""<style>
-        .block-container {max-width: 800px; padding-top: 2.5rem;}
+        .block-container {max-width: 700px; padding-top: 2rem; padding-bottom: 2rem;}
         h1, h2, h3 {font-family: Georgia, serif;}
-        h1 {letter-spacing: -.04em;}
-        [data-testid="stChatMessage"] {border-radius: 16px; padding: 1.1rem;}
+        h1 {letter-spacing: -.04em; font-size: 2rem !important;}
+        .st-key-support-window {
+            background: #fffdf8; border: 1px solid #d7ddcf;
+            border-radius: 22px; padding: 1.1rem;
+        }
+        .dewey-window-heading {display: flex; align-items: center; gap: .75rem;}
+        .dewey-avatar {font-size: 1.8rem; background: #edf2e5; border-radius: 14px;
+                       padding: .35rem .5rem;}
+        .dewey-window-heading strong {font-size: 1rem;}
+        .dewey-window-heading small {display: block; color: #74816e; margin-top: .1rem;}
+        .st-key-conversation [data-testid="stChatMessage"] {
+            border-radius: 15px; padding: .8rem; background: #edf2e7;
+        }
+        .st-key-support-window [data-testid="stChatInput"] {border-radius: 14px;}
         .st-key-suggestions {margin-top: .15rem;}
         .st-key-suggestions button {
             border-radius: 999px; padding: .6rem 1.1rem; min-height: 2.8rem;
@@ -153,34 +165,47 @@ def main() -> None:
         }
         .dewey-label {color: #64775b; font-size: .78rem; font-weight: 700;
                       letter-spacing: .18em; margin-bottom: .5rem;}
+        @media (max-width: 480px) {
+            .block-container {padding: 1.2rem .8rem;}
+            .st-key-support-window {padding: .8rem; border-radius: 18px;}
+            .dewey-label {font-size: .65rem; letter-spacing: .12em;}
+        }
     </style>""", unsafe_allow_html=True)
     initialize_session()
     brand, details = st.columns([4, 1.4], vertical_alignment="center")
     with brand:
-        st.markdown('<div class="dewey-label">BOOKLY / YOUR READING LIFE, LOOKED AFTER</div>', unsafe_allow_html=True)
+        st.markdown('<div class="dewey-label">BOOKLY / SUPPORT</div>', unsafe_allow_html=True)
     with details:
         render_demo_details()
-    st.title("🐛 A word with Dewey")
-    st.markdown("Your little bookworm for orders, returns, and getting back to a good book.")
-    st.caption("A little help for your next chapter.")
+    st.title("A word with Dewey")
+    st.markdown("A little help for your next chapter.")
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     if not api_key:
         st.info("Add OPENAI_API_KEY to your local .env file, then refresh to chat with Dewey. See the README for setup.")
-    render_history()
-    render_confirmation()
-    suggested_prompt = render_suggestions(disabled=not api_key)
-
-    prompt = st.chat_input("Tell Dewey what’s going on…", disabled=not api_key, max_chars=2000)
-    prompt = prompt or suggested_prompt
-    if prompt and prompt.strip():
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(prompt)
-        with st.spinner("Dewey is checking…"):
-            # Disable SDK retries so the six-call bound also limits actual API requests.
-            client = OpenAI(api_key=api_key, timeout=30.0, max_retries=0)
-            run_turn(prompt, st.session_state, client, model=os.getenv("OPENAI_MODEL") or MODEL)
-        st.rerun()
+    with st.container(key="support-window"):
+        st.markdown('''<div class="dewey-window-heading">
+            <span class="dewey-avatar" aria-hidden="true">🐛</span>
+            <div><strong>Dewey, your bookworm</strong><small>Bookly’s little support desk</small></div>
+        </div>''', unsafe_allow_html=True)
+        st.divider()
+        # Only the transcript scrolls; the suggestions and composer stay in the window.
+        conversation = st.container(height=300, border=False, key="conversation", autoscroll=True)
+        with conversation:
+            render_history()
+            render_confirmation()
+        suggested_prompt = render_suggestions(disabled=not api_key)
+        prompt = st.chat_input("Tell Dewey what’s going on…", disabled=not api_key, max_chars=2000)
+        prompt = prompt or suggested_prompt
+        if prompt and prompt.strip():
+            with conversation:
+                with st.chat_message("user", avatar="👤"):
+                    st.markdown(prompt)
+                with st.spinner("Dewey is checking…"):
+                    # Disable SDK retries so the six-call bound also limits actual API requests.
+                    client = OpenAI(api_key=api_key, timeout=30.0, max_retries=0)
+                    run_turn(prompt, st.session_state, client, model=os.getenv("OPENAI_MODEL") or MODEL)
+            st.rerun()
 
 
 if __name__ == "__main__":

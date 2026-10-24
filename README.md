@@ -84,8 +84,9 @@ request times out after 30 seconds, and parallel tool calls are disabled. Tool r
 and results, including model reasoning items required by the API, remain in history.
 The header's **Demo details → Behind the scenes** exposes actual function requests and
 results for review. Clickable starter bubbles in the chat use the same agent path as
-typed messages and disappear after the first customer message. OpenAI response
-storage is disabled with `store=False`; this is not a promise of zero provider retention.
+typed messages and disappear after the first customer message.
+The chat lives in a compact panel with a scrollable transcript and its own message box.
+OpenAI response storage is disabled with `store=False`; this is not a promise of zero provider retention.
 
 ## Demo journeys
 

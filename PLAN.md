@@ -189,6 +189,9 @@ Neither follow-up replaces Python's validation and confirmation checks.
 - UI refinement: use a self-contained chat with clickable starter bubbles in the welcome
   view. Hide suggestions after the first customer message. Put sample orders, policy,
   tool traces, and reset in the header's optional **Demo details** popover instead of a sidebar.
+- Chat-window refinement: keep Dewey in a compact bordered panel with a 300px scrollable
+  transcript and the suggestion bubbles and composer inside the panel. The page no longer
+  uses a viewport-pinned composer; the panel narrows to fit small screens.
 
 ## 6. Lessons from the hotel agent — architecture review
 
