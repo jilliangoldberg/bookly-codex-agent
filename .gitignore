@@ -1,8 +1,9 @@
 .venv/
 .env
+# Local credential scratch file; never include it in a commit.
+Untitled
 __pycache__/
 .pytest_cache/
 *.pyc
 .DS_Store
 tmp/
-

@@ -44,7 +44,8 @@ python -m pytest -q
 4. **`tests/test_dewey.py`**: backend rules, simulated API conversations, and real Streamlit
    widget tests.
 
-The approved scope is in [PLAN.md](PLAN.md). The pitch deck is in `output/`.
+The approved scope is in [PLAN.md](PLAN.md), with a [two-minute demo rehearsal](DEMO.md).
+The editable five-slide [pitch deck](output/Dewey_Bookly_Pitch_v1.pptx) is in `output/`.
 
 ## Architecture and ownership
 
