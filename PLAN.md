@@ -186,3 +186,114 @@ Neither follow-up replaces Python's validation and confirmation checks.
   These state arguments are internal Python details and are absent from the model schemas.
 - The fixed demo date is October 24, 2026. Fixture dates are intentionally frozen.
 - The initial static avatar is a caterpillar emoji; custom artwork and animation are deferred.
+
+## 6. Lessons from the hotel agent — architecture review
+
+Reviewed the actual source at
+[`e13730d`](https://github.com/jilliangoldberg/hotel-customer-service-agent/tree/e13730d6c96a57a5a7b65709845ec9e92bd2e086).
+This was static inspection of orchestration, tools, prompts, policy, evaluation harness,
+scenarios, and selected tests; the hotel app and its paid eval suite were not run.
+These findings extend the roadmap, not the initial implementation scope.
+
+### Patterns worth carrying forward
+
+1. **Use objective evidence to constrain an LLM judge.** The hotel's
+   [evaluation gates](https://github.com/jilliangoldberg/hotel-customer-service-agent/blob/e13730d6c96a57a5a7b65709845ec9e92bd2e086/src/support_agent/eval/harness.py)
+   override a passing judgment when required tools are missing or forbidden actions occur.
+   For Dewey, a convincing reply must never compensate for a wrong item, a duplicate
+   request, a creation without a Confirm event, or a fabricated return reference.
+   Check exact arguments, successful results, and the created-return ledger, not tool names alone.
+
+2. **Judge each reply using evidence available at that point.** The hotel harness records
+   a tool-call count per turn and replays evidence chronologically. Dewey's future evaluator
+   should give each reply its own evidence boundary. A later lookup cannot retroactively
+   justify an earlier invented ETA. Record UI Confirm and Cancel events alongside tool calls;
+   a text-only customer simulator cannot demonstrate button authorization.
+
+3. **Try fixed replay before generating customers.** The hotel's
+   [scenario definitions](https://github.com/jilliangoldberg/hotel-customer-service-agent/blob/e13730d6c96a57a5a7b65709845ec9e92bd2e086/src/support_agent/eval/scenarios.py)
+   separate the customer's goal, behavior, facts, criteria, and tool expectations. Start Dewey
+   with hand-written scripts for missing ID, ambiguous book, changed item, typed "yes",
+   cancellation, expired delivery, duplicate return, and unsupported refund demands.
+   Keep these identical when comparing the Codex and Claude Code implementations.
+   Add simulated customers only after the cheap, reproducible scripts are useful.
+
+4. **Make repair conditional and bounded.** The hotel's
+   [response policy](https://github.com/jilliangoldberg/hotel-customer-service-agent/blob/e13730d6c96a57a5a7b65709845ec9e92bd2e086/src/support_agent/policy.py)
+   checks known unsupported claims, triggers one tool-free rewrite, and falls back if that
+   rewrite is still unsafe. For Dewey's deferred pre-send work, first consider narrow checks
+   for observed failures. Any LLM repair gets no action tools, at most one attempt, and its
+   own token budget. Regex rules are incomplete heuristics, not semantic proof of grounding.
+   A semantic validation LLM remains an experiment, not an extra call on every message now.
+
+5. **History should reflect what the customer actually saw.** The hotel's
+   [agent](https://github.com/jilliangoldberg/hotel-customer-service-agent/blob/e13730d6c96a57a5a7b65709845ec9e92bd2e086/src/support_agent/agent.py)
+   removes unsafe drafts and correction instructions after a rewrite. If Dewey adds repair,
+   retain trusted tool evidence and only the delivered assistant response. For incomplete
+   turns, consider a working history/proposal copy and commit accepted output deliberately.
+   Never assume rolling back chat history rolls back an external action: confirmed writes
+   need durable IDs and idempotency. An invalidated old proposal must stay invalidated.
+
+6. **Check eligibility before asking unnecessary questions.** The hotel's
+   [promotion tools](https://github.com/jilliangoldberg/hotel-customer-service-agent/blob/e13730d6c96a57a5a7b65709845ec9e92bd2e086/src/support_agent/tools.py)
+   check the window before collecting email and recheck it at execution. Once Dewey knows
+   the order and book, check eligibility before asking for a missing reason. Do not make
+   customers explain damage when the prototype cannot accept the return. Continue to
+   recheck eligibility at submission; an earlier successful check is not permanent permission.
+
+7. **Separate developer evidence from customer experience.** The hotel keeps operational
+   tool outcomes/timing separate from detailed local evaluation records. Dewey's current raw
+   sidebar is acceptable for fictional data; keep it explicitly a demo inspection view.
+   Before real customer data, redact identifiers and return reasons in operational logs,
+   isolate sessions, and keep full evaluation transcripts private and out of Git.
+
+### Cautions from this implementation
+
+- **Scenario drift is a real risk.** `happy-reservation` asks the judge to expect a check-in
+  link, while `lookup_reservation` returns `check_in_date` and no link. Align Dewey's rubric
+  with actual tool fields, and update them together. Do not reward invented output just
+  because an outdated test description asks for it.
+- **Judge failure is not the same as agent failure.** The hotel harness turns judge/parse
+  errors into failed runs with all scores set to 1. For Dewey, preserve an `inconclusive`
+  or infrastructure-error outcome so rate limits and invalid judge JSON do not masquerade
+  as demonstrated agent safety failures. Use a strict structured judge response later.
+- **A separate request is not an independent opinion.** The hotel uses the eval model for
+  both simulator and judge. Human-reviewed expected outcomes and objective gates still
+  matter; a second call can share the same blind spots. Independent judges or repeated
+  trials are later options when the budget justifies them.
+- **Do not port the whole framework.** The hotel now uses the OpenAI Agents SDK and a
+  larger package structure. Dewey retains its explicit API loop and three application files.
+  Its three-tool set does not need dynamic tool exposure, a generic registry, async runner,
+  or promotion proof tokens. Keeping submission outside the model's tool set already
+  provides a clear action boundary.
+
+### Prioritized follow-up checklist
+
+- [ ] First: fixed scenario scripts, actual button events, per-turn tool/state evidence,
+  objective action gates, and bounded opt-in live checks with token/cost reporting.
+- [ ] Next: harden incomplete/refusal handling and history recovery with offline tests;
+  check return eligibility before collecting a missing reason.
+- [ ] Then: opt-in LLM judge with structured scores, cited evidence, and separate
+  infrastructure outcomes; add adversarial customer generation after baseline replay.
+- [ ] Later: trial conditional pre-send validation/repair. Measure quality, false alarms,
+  latency, and spend; keep Python action validation authoritative.
+
+### Budget and comparison policy
+
+The user is comparing Codex and Claude Code builds and requests limited spend. Compare
+the same scripts, fixtures, policy date, model/settings, and pass conditions. Report
+correctness, clarification quality, action safety, readability, and observed request/token
+counts. Do not claim one build is better without testing both under the same conditions.
+
+Default to offline checks. Paid checks must be explicit and small; stop on the first
+unexpected API error rather than retrying. For this verification use at most eight OpenAI
+requests across all turns, no simulator or judge calls, no SDK retries, and a conservative
+$0.10 token ceiling. Record observed usage; cost is an estimate from published model rates,
+not an account invoice. Future live scripts should remain opt-in and reports local.
+
+Verification outcome: seven requests used 7,032 input tokens (2,048 cached) and 288 output
+tokens, estimated at $0.005188. Tracking, missing-field clarification, item disambiguation,
+and return-tool preparation were observed live. The conservative guard stopped before
+the final return reply. Python confirmation of the actual prepared proposal passed locally,
+including duplicate rejection, without further API calls. See [DEMO.md](DEMO.md) for the
+exact limitations. No paid hotel-agent evaluation, simulator, or judge was run.

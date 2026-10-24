@@ -55,3 +55,33 @@ After a key was added, the live request reached OpenAI but returned HTTP 429 wit
 `credit_balance_exhausted` / `insufficient_quota`. Live conversation acceptance remains
 pending API credits. The app now distinguishes exhausted credits from temporary rate
 limiting, with three added regression cases (37 automated checks total).
+
+## Limited live verification after credits were added
+
+Four scripted customer messages were attempted against `gpt-5.4-mini`, using the actual
+production prompt, tools, and request settings. A shared test-only guard allowed at most
+eight requests and conservatively reserved at most $0.10 of token cost. It stopped after
+seven requests because its cumulative worst-case reservations reached that ceiling.
+
+Observed results:
+
+- Dewey asked for the missing order number and retained the tracking intent.
+- `get_order(BK-1001)` was called and the reply correctly stated shipped status and the
+  estimated October 28, 2026 delivery date.
+- For BK-1002, Dewey retrieved the order and asked which of its two books to return.
+- After “The Hobbit; it arrived damaged”, it successfully called eligibility and preparation
+  with the correct order, item ID, and reason. Preparation created no return record.
+- Replaying the actual canonical proposal through Python confirmation created `RET-0001`
+  once and rejected a second confirmation, without another API call.
+
+**Limits:** the budget guard stopped before the final customer-facing return reply.
+Confirmation was checked locally from actual live proposal evidence; a complete live
+browser return journey remains unverified. The expired-return path is covered offline,
+but was not paid-tested here. No simulator or judge requests were made, and the hotel
+agent's paid evaluations were not run.
+
+Usage: **7 requests, 7,032 input tokens (including 2,048 cached), and 288 output tokens**.
+Estimated cost: **$0.005188**, approximately half a cent. This uses the
+[published GPT-5.4 mini rates](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
+of $0.75 / million input, $0.075 / million cached input, and $4.50 / million output tokens;
+it is an estimate, not an invoice. The detailed transcript remains local in ignored `tmp/`.
