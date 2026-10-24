@@ -2,6 +2,8 @@
 
 import json
 import os
+from pathlib import Path
+from urllib.parse import quote
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -135,6 +137,16 @@ def main() -> None:
     """Assemble the support desk and call the agent only when a new message is submitted."""
     load_dotenv()
     st.set_page_config(page_title="Dewey · Bookly Support", page_icon="🐛", layout="centered")
+    # Embed the local pattern so the background needs no external image requests.
+    book_pattern = quote((Path(__file__).parent / "assets" / "book-pattern.svg").read_text())
+    st.markdown(f'''<style>
+        .stApp {{
+            background-color: #f7f3e9;
+            background-image: url("data:image/svg+xml,{book_pattern}");
+            background-size: 560px 440px;
+        }}
+        [data-testid="stHeader"] {{background: transparent;}}
+    </style>''', unsafe_allow_html=True)
     st.markdown("""<style>
         .block-container {max-width: 700px; padding-top: 2rem; padding-bottom: 2rem;}
         h1, h2, h3 {font-family: Georgia, serif;}
