@@ -186,6 +186,9 @@ Neither follow-up replaces Python's validation and confirmation checks.
   These state arguments are internal Python details and are absent from the model schemas.
 - The fixed demo date is October 24, 2026. Fixture dates are intentionally frozen.
 - The initial static avatar is a caterpillar emoji; custom artwork and animation are deferred.
+- UI refinement: use a self-contained chat with clickable starter bubbles in the welcome
+  view. Hide suggestions after the first customer message. Put sample orders, policy,
+  tool traces, and reset in the header's optional **Demo details** popover instead of a sidebar.
 
 ## 6. Lessons from the hotel agent — architecture review
 
@@ -243,7 +246,7 @@ These findings extend the roadmap, not the initial implementation scope.
 
 7. **Separate developer evidence from customer experience.** The hotel keeps operational
    tool outcomes/timing separate from detailed local evaluation records. Dewey's current raw
-   sidebar is acceptable for fictional data; keep it explicitly a demo inspection view.
+   trace in Demo details is acceptable for fictional data; keep it explicitly a demo inspection view.
    Before real customer data, redact identifiers and return reasons in operational logs,
    isolate sessions, and keep full evaluation transcripts private and out of Git.
 

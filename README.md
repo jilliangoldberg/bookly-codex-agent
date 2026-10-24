@@ -82,7 +82,9 @@ reason. Its title is derived from tool data.
 Each turn allows at most six sequential model requests. SDK retries are disabled, each
 request times out after 30 seconds, and parallel tool calls are disabled. Tool requests
 and results, including model reasoning items required by the API, remain in history.
-The sidebar exposes actual function requests and results for review. OpenAI response
+The header's **Demo details → Behind the scenes** exposes actual function requests and
+results for review. Clickable starter bubbles in the chat use the same agent path as
+typed messages and disappear after the first customer message. OpenAI response
 storage is disabled with `store=False`; this is not a promise of zero provider retention.
 
 ## Demo journeys
@@ -128,7 +130,7 @@ validation, tool/backend failures, API failure recovery, and the six-call limit.
 Streamlit tests exercise real confirmation controls and chat rendering with a simulated API.
 
 Simulated model responses verify the orchestration, not the model's ability to choose the
-right response. With a real key, rehearse the journeys above and check the sidebar trace:
+right response. With a real key, rehearse the journeys above and check the trace in Demo details:
 missing ID → clarification, missing book → disambiguation, correct dates, no unsupported
 action claims, honest failures. Treat these as live acceptance checks before submission.
 

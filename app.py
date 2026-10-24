@@ -93,17 +93,16 @@ def render_confirmation() -> None:
         cancel.button("Cancel", on_click=cancel_return, use_container_width=True)
 
 
-def render_sidebar() -> None:
-    """Offer reproducible demo prompts, the assumed policy, and an inspectable tool trace."""
-    with st.sidebar:
-        st.markdown("### A little help for your next chapter")
-        st.caption("Fictional Bookly support desk · session-only data")
-        st.markdown("**Try a conversation**")
-        st.code("Where’s my order?", language=None)
-        st.caption("Then give Dewey **BK-1001** to track a shipment.")
-        st.code("I want to return a book from BK-1002", language=None)
-        st.caption("Choose **The Hobbit** or **Piranesi**, then give a reason.")
-        st.caption("Try **BK-1003** for an expired return or **BK-9999** for an unknown order.")
+def render_demo_details() -> None:
+    """Keep fixture help, policy, and tool evidence in an optional header popover."""
+    with st.popover("Demo details", type="tertiary"):
+        st.markdown("**A little peek behind the pages**")
+        st.caption("Fictional Bookly orders · session-only data")
+        with st.expander("Sample orders"):
+            st.write("**BK-1001** — shipped, estimated October 28.")
+            st.write("**BK-1002** — The Hobbit and Piranesi; delivered and eligible for return.")
+            st.write("**BK-1003** — outside the return window.")
+            st.write("**BK-9999** — an unknown order.")
         with st.expander("Demo policy & assumptions"):
             st.write(f"Fixed demo date: {DEMO_DATE.isoformat()}. Delivered books may be returned within 30 calendar days, inclusive. One request per book.")
             st.write("Orders are fictional. No authentication, payments, shipping labels, or live bookstore integrations. A new browser session resets the mock data.")
@@ -120,32 +119,60 @@ def render_sidebar() -> None:
             st.rerun()
 
 
+def render_suggestions(disabled: bool) -> str | None:
+    """Offer clickable starter bubbles until the customer sends their first message."""
+    if st.session_state.pending_return or any(message.get("role") == "user" for message in st.session_state.messages):
+        return None
+    # These feed the same agent path as typed text; they do not bypass clarification.
+    with st.container(key="suggestions", horizontal=True, gap="small"):
+        for prompt in ("Where’s my order?", "I’d like to return a book"):
+            if st.button(prompt, disabled=disabled):
+                return prompt
+    return None
+
+
 def main() -> None:
     """Assemble the support desk and call the agent only when a new message is submitted."""
     load_dotenv()
     st.set_page_config(page_title="Dewey · Bookly Support", page_icon="🐛", layout="centered")
     st.markdown("""<style>
-        .block-container {max-width: 820px; padding-top: 2.5rem;}
+        .block-container {max-width: 800px; padding-top: 2.5rem;}
         h1, h2, h3 {font-family: Georgia, serif;}
         h1 {letter-spacing: -.04em;}
         [data-testid="stChatMessage"] {border-radius: 16px; padding: 1.1rem;}
-        [data-testid="stSidebar"] {border-right: 1px solid #dedfce;}
+        .st-key-suggestions {margin-top: .15rem;}
+        .st-key-suggestions button {
+            border-radius: 999px; padding: .6rem 1.1rem; min-height: 2.8rem;
+            background: #e8efdf; border: 1px solid #d9e4cf; color: #365440;
+        }
+        .st-key-suggestions button:hover:not(:disabled) {
+            background: #dce8ce; border-color: #91a77e; color: #283d32;
+        }
+        .st-key-suggestions button:focus-visible {
+            outline: 2px solid #496b4a; outline-offset: 3px;
+        }
         .dewey-label {color: #64775b; font-size: .78rem; font-weight: 700;
                       letter-spacing: .18em; margin-bottom: .5rem;}
     </style>""", unsafe_allow_html=True)
     initialize_session()
-    st.markdown('<div class="dewey-label">BOOKLY / YOUR READING LIFE, LOOKED AFTER</div>', unsafe_allow_html=True)
+    brand, details = st.columns([4, 1.4], vertical_alignment="center")
+    with brand:
+        st.markdown('<div class="dewey-label">BOOKLY / YOUR READING LIFE, LOOKED AFTER</div>', unsafe_allow_html=True)
+    with details:
+        render_demo_details()
     st.title("🐛 A word with Dewey")
     st.markdown("Your little bookworm for orders, returns, and getting back to a good book.")
-    st.caption("A small support demo · fictional orders · real AI conversations")
+    st.caption("A little help for your next chapter.")
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     if not api_key:
         st.info("Add OPENAI_API_KEY to your local .env file, then refresh to chat with Dewey. See the README for setup.")
     render_history()
     render_confirmation()
+    suggested_prompt = render_suggestions(disabled=not api_key)
 
     prompt = st.chat_input("Tell Dewey what’s going on…", disabled=not api_key, max_chars=2000)
+    prompt = prompt or suggested_prompt
     if prompt and prompt.strip():
         with st.chat_message("user", avatar="👤"):
             st.markdown(prompt)
@@ -154,7 +181,6 @@ def main() -> None:
             client = OpenAI(api_key=api_key, timeout=30.0, max_retries=0)
             run_turn(prompt, st.session_state, client, model=os.getenv("OPENAI_MODEL") or MODEL)
         st.rerun()
-    render_sidebar()
 
 
 if __name__ == "__main__":

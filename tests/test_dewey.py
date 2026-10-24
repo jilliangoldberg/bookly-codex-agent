@@ -273,6 +273,7 @@ def test_ui_missing_key_is_clear_and_disables_chat(monkeypatch):
     assert not app.exception
     assert app.chat_input[0].disabled
     assert "OPENAI_API_KEY" in app.info[0].value
+    assert next(button for button in app.button if button.label == "Where’s my order?").disabled
 
 
 def test_ui_confirmation_records_actual_result(monkeypatch):
@@ -304,4 +305,22 @@ def test_ui_chat_calls_agent_and_displays_response(monkeypatch):
     app.chat_input[0].set_value("Where is my order?").run()
     assert not app.exception
     assert "order number" in app.chat_message[-1].markdown[0].value
+    assert client.responses.create.call_count == 1
+
+
+@pytest.mark.parametrize("starter", ["Where’s my order?", "I’d like to return a book"])
+def test_ui_starter_bubbles_send_once_and_reset_restores_them(monkeypatch, starter):
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-test-key")
+    client = fake_client(api_response("What’s your order number?"))
+    monkeypatch.setattr("openai.OpenAI", lambda **kwargs: client)
+    app = AppTest.from_file(APP_PATH).run()
+    next(button for button in app.button if button.label == starter).click().run()
+    assert not app.exception
+    assert client.responses.create.call_count == 1
+    assert app.session_state["messages"][1] == {"role": "user", "content": starter}
+    assert not any(button.label == starter for button in app.button)
+    app.run()
+    assert client.responses.create.call_count == 1
+    next(button for button in app.button if button.label == "Start a fresh demo").click().run()
+    assert any(button.label == starter for button in app.button)
     assert client.responses.create.call_count == 1

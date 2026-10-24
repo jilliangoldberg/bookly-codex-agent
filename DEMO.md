@@ -14,7 +14,7 @@ handles the conversation; Python controls the tools and actions.”
 
 Type “Where's my order?” and wait for Dewey to request its number. Reply “BK-1001”.
 Confirm Dewey reports shipped status and an *estimated* October 28, 2026 delivery.
-Open **Behind the scenes** to show the actual `get_order` request and result.
+Open **Demo details → Behind the scenes** to show the actual `get_order` request and result.
 
 **0:40–1:20 — Prepare and submit a return**
 
